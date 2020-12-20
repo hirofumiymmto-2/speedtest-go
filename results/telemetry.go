@@ -63,6 +63,10 @@ type Result struct {
 	RawISPInfo      IPInfoResponse `json:"rawIspInfo"`
 }
 
+type SimpleIPResponse struct {
+	IP string         `json:"ip"`
+}
+
 type IPInfoResponse struct {
 	IP           string `json:"ip"`
 	Hostname     string `json:"hostname"`

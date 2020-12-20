@@ -49,7 +49,7 @@ func ListenAndServe(conf *config.Config) error {
 
 	addr := net.JoinHostPort(conf.BindAddress, conf.Port)
 	log.Infof("Starting backend server on %s", addr)
-	r.Get("/*", pages)
+	// r.Get("/*", pages)
 	r.HandleFunc("/empty", empty)
 	r.HandleFunc("/backend/empty", empty)
 	r.Get("/garbage", garbage)
@@ -77,6 +77,7 @@ func ListenAndServe(conf *config.Config) error {
 	r.HandleFunc("/stats.php", results.Stats)
 	r.HandleFunc("/backend/stats.php", results.Stats)
 
+	r.Get("/", index)
 	go listenProxyProtocol(conf, r)
 	return http.ListenAndServe(addr, r)
 }
@@ -97,6 +98,52 @@ func listenProxyProtocol(conf *config.Config, r *chi.Mux) {
 	}
 }
 
+func index(w http.ResponseWriter, r *http.Request) {
+	var ret results.SimpleIPResponse
+
+	clientIP := r.RemoteAddr
+	clientIP = strings.ReplaceAll(clientIP, "::ffff:", "")
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err == nil {
+		clientIP = ip
+	}
+
+	isSpecialIP := true
+	switch {
+	case clientIP == "::1":
+		ret.IP = clientIP + " - localhost IPv6 access"
+	case strings.HasPrefix(clientIP, "fe80:"):
+		ret.IP = clientIP + " - link-local IPv6 access"
+	case strings.HasPrefix(clientIP, "127."):
+		ret.IP = clientIP + " - localhost IPv4 access"
+	case strings.HasPrefix(clientIP, "10."):
+		ret.IP = clientIP + " - private IPv4 access"
+	case regexp.MustCompile(`^172\.(1[6-9]|2\d|3[01])\.`).MatchString(clientIP):
+		ret.IP = clientIP + " - private IPv4 access"
+	case strings.HasPrefix(clientIP, "192.168"):
+		ret.IP = clientIP + " - private IPv4 access"
+	case strings.HasPrefix(clientIP, "169.254"):
+		ret.IP = clientIP + " - link-local IPv4 access"
+	case regexp.MustCompile(`^100\.([6-9][0-9]|1[0-2][0-7])\.`).MatchString(clientIP):
+		ret.IP = clientIP + " - CGNAT IPv4 access"
+	default:
+		isSpecialIP = false
+	}
+
+	if isSpecialIP {
+		b, _ := json.Marshal(&ret)
+		if _, err := w.Write(b); err != nil {
+			log.Errorf("Error writing to client: %s", err)
+		}
+		ret.IP = ""
+	}
+
+	ret.IP = clientIP
+
+	render.JSON(w, r, ret)
+}
+
 func pages(w http.ResponseWriter, r *http.Request) {
 	if r.RequestURI == "/" {
 		r.RequestURI = "/index.html"
@@ -114,12 +161,22 @@ func empty(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = r.Body.Close()
+	accessControlRequestHeaders := r.Header.Get("Access-Control-Request-Headers")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Encoding, Content-Type, " + accessControlRequestHeaders)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0, post-check=0, pre-check=0")
+	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
 }
 
 func garbage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0, post-check=0, pre-check=0")
+	w.Header().Set("Pragma", "no-cache")
+
 	w.Header().Set("Content-Description", "File Transfer")
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename=random.dat")
