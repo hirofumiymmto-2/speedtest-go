@@ -81,28 +81,6 @@ type IPInfoResponse struct {
 }
 
 func Initialize(c *config.Config) {
-	// changed to use Noto Sans instead of OpenSans, due to issue:
-	// https://github.com/golang/freetype/issues/8
-	if b, err := ioutil.ReadFile(filepath.Join(c.AssetsPath, "NotoSansDisplay-Light.ttf")); err != nil {
-		log.Fatalf("Error opening NotoSansDisplay-Light font: %s", err)
-	} else {
-		f, err := freetype.ParseFont(b)
-		if err != nil {
-			log.Fatalf("Error parsing NotoSansDisplay-Light font: %s", err)
-		}
-		fontLight = f
-	}
-
-	if b, err := ioutil.ReadFile(filepath.Join(c.AssetsPath, "NotoSansDisplay-Medium.ttf")); err != nil {
-		log.Fatalf("Error opening NotoSansDisplay-Medium font: %s", err)
-	} else {
-		f, err := freetype.ParseFont(b)
-		if err != nil {
-			log.Fatalf("Error parsing NotoSansDisplay-Medium font: %s", err)
-		}
-		fontBold = f
-	}
-
 	labelFace = truetype.NewFace(fontBold, &truetype.Options{
 		Size:    26,
 		DPI:     dpi,
