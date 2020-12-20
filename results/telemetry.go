@@ -79,35 +79,6 @@ type IPInfoResponse struct {
 }
 
 func Initialize(c *config.Config) {
-	labelFace = truetype.NewFace(fontBold, &truetype.Options{
-		Size:    26,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
-
-	valueFace = truetype.NewFace(fontLight, &truetype.Options{
-		Size:    36,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
-
-	smallLabelFace = truetype.NewFace(fontBold, &truetype.Options{
-		Size:    20,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
-
-	orgFace = truetype.NewFace(fontBold, &truetype.Options{
-		Size:    16,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
-
-	watermarkFace = truetype.NewFace(fontLight, &truetype.Options{
-		Size:    14,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
 }
 
 func Record(w http.ResponseWriter, r *http.Request) {
